@@ -19,24 +19,29 @@ interface FetchGamesResponse {
 }
 
 const useGames = () => {
+  const [isLoading, setLoading] = useState(false);
   const [games, setGames] = useState<Game[]>([]);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
     const controller = new AbortController(); // Moved inside useEffect
-
+    setLoading(true);
     apiClient
       .get<FetchGamesResponse>("/games", { signal: controller.signal })
-      .then((res) => setGames(res.data.results))
+      .then((res) => {
+        setGames(res.data.results);
+        setLoading(false);
+      })
       .catch((err) => {
         if (err instanceof CanceledError) return; // This check is crucial to avoid setting state after unmount
         setError(err.message);
+        setLoading(false);
       });
 
     return () => controller.abort(); // Cleanup function to abort the request on unmount
   }, []); // Empty dependency array means this runs once on mount
 
-  return { games, error };
+  return { games, error, isLoading };
 };
 
 export default useGames;
